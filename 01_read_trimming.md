@@ -12,7 +12,8 @@ while read -r line
     fasterq-dump --verbose --split-files --progress -e 16 -O ${out}raw_reads/ ${line}
 done < to_download
 ```
-Sample IDs were then renamed to be consistent with literature and fastqc was run on raw reads. The `rename_list` file was constructed using metadata in the NCBI project PRJNA820751.
+Sample IDs were then renamed for simplicity and to be consistent with Merot et al. Fastqc was then run on raw reads for an initial quality check.  
+The `rename_list` file was constructed using metadata in the NCBI project PRJNA820751.
 ```
 while read -r line
     do
@@ -26,7 +27,7 @@ done < rename_list
 ```
 
 ## Read trimming
-The for loop below was modified from [01_fastp.sh](https://github.com/clairemerot/wgs_sample_preparation/blob/master/01_scripts/01_fastp.sh).  Because it is unclear whether there were any additional options used, we will run it as indicated in this script.
+The for loop below was modified from [01_fastp.sh](https://github.com/clairemerot/wgs_sample_preparation/blob/master/01_scripts/01_fastp.sh). Because it is unclear whether there were any additional options used, we will run under default settings (as it was indicated in this script).
 
 ```
 dir=/media/jana/BigData/BIOL337/C_clupeaformis_SR/
