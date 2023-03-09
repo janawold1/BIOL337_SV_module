@@ -16,7 +16,7 @@ for samp in ${fqs}*_trimmed_1.fastq.gz
 
     #Now to incorporate this information into the alignment
     rgid="ID:${instrument}_${instrumentrun}"
-    rgpl="PL:${platform}"
+    rgpl="PL:Illumina"
     rgsm="SM:${base}"
     ID="@RG\t${rgid}\t${rgpl}\t${rgsm}"
 
