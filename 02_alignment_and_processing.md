@@ -39,15 +39,15 @@ for file in ${bam}*.sorted.bam
     base=$(basename ${file} .sorted.bam)
     echo "Computing alignment metrics for ${base}..."
     picard CollectAlignmentSummaryMetrics \
-        R=${ref} \
-        I=${file} \
-        O=${stats}${base}_alignment_metrics.txt
+        -R ${ref} \
+        -I ${file} \
+        -O ${stats}${base}_alignment_metrics.txt
 
     echo "Computing insert size metrics for ${base}..."
     picard CollectInsertSizeMetrics \
-        I=${file} \
-        O=${stats}${base}_insert_size_metrics.txt \
-        H=${stats}${base}_insert_size_histogram.pdf
+        -I ${file} \
+        -O ${stats}${base}_insert_size_metrics.txt \
+        -H ${stats}${base}_insert_size_histogram.pdf
 done
 ```
 Finally, duplicates were removed using picard. This [shell script](https://github.com/clairemerot/wgs_sample_preparation/blob/master/01_scripts/04_remove_duplicates.sh) was modified as per below.  
@@ -60,10 +60,10 @@ for file in ${bam}*.sorted.bam
     base=$(basename ${file} .sorted.bam)
     echo "Computing alignment metrics for ${base}..."
     picard MarkDuplicates \
-        I=${file} \
-        O=${nodup}${base}_nodup.bam \
-        M=${stats}${base}_metrics.txt \
-        VALIDATION_STRINGENCY=SILENT \
-        REMOVE_DUPLICATES=true 
+        -I ${file} \
+        -O ${nodup}${base}_nodup.bam \
+        -M ${stats}${base}_metrics.txt \
+        -VALIDATION_STRINGENCY SILENT \
+        -REMOVE_DUPLICATES true 
 done
 ```
