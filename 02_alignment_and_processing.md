@@ -30,6 +30,18 @@ for samp in ${fqs}*_trimmed_1.fastq.gz
     samtools index ${bam}${base}.sorted.bam
 done
 ```
+There were a small handfull of samples that had issues parsing the `$infoline` above. These samples had the forward (1) or reverse (2) read notation annotated to the end of the infoline which was problematic for relating forward and reverse reads to one another. This was fixed as per below.  
+```
+for redo in ${fqs}redo/*_trimmed_1.fastq.gz
+    do
+    base=$(basename $fqs _trimmed_1.fastq.gz)
+    echo "Fixing reads for ${base}..."
+    zcat ${redo} | sed -e 's/.1 / /g' | gzip > ${fqs}redo/${base}_fix_1.fastq.gz
+    zcat ${fqs}redo/${base}_trimmed_2.fastq.gz | sed -e 's/.2 / /g' | gzip > ${fqs}redo/${base}_fix_2.fastq.gz
+done
+```
+Read alignments were then performed as per above.  
+
 Once alignments were complete, alignment metrics were estimated using picard v3.0.0. The below script was modified from this [shell script](https://github.com/clairemerot/wgs_sample_preparation/blob/master/01_scripts/03_collect_metrics.sh).  
 ```
 stats=/media/jana/BigData/BIOL337/C_clupeaformis_SR/alignments/bam_stats/
@@ -64,6 +76,6 @@ for file in ${bam}*.sorted.bam
         -O ${nodup}${base}_nodup.bam \
         -M ${stats}${base}_metrics.txt \
         -VALIDATION_STRINGENCY SILENT \
-        -REMOVE_DUPLICATES true 
+        -REMOVE_DUPLICATES true
 done
 ```
