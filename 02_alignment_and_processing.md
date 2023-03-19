@@ -30,7 +30,7 @@ for samp in ${fqs}*_trimmed_1.fastq.gz
     samtools index ${bam}${base}.sorted.bam
 done
 ```
-There were a small handfull of samples that had issues parsing the `$infoline` above. These samples had the forward (1) or reverse (2) read notation annotated to the end of the infoline which was problematic for relating forward and reverse reads to one another. This was fixed as per below.  
+There were a small handfull of samples that had issues parsing the `$infoline` above (CD22, CD28, CN10, CN11, and CD32). These samples had the forward (.1) or reverse (.2) read notation annotated to the end of the infoline, which was problematic for relating forward and reverse reads to one another. This was fixed as per below.  
 ```
 for redo in ${fqs}redo/*_trimmed_1.fastq.gz
     do
@@ -70,12 +70,81 @@ stats=/media/jana/BigData/BIOL337/C_clupeaformis_SR/alignments/nodup_stats/
 for file in ${bam}*.sorted.bam
     do
     base=$(basename ${file} .sorted.bam)
-    echo "Computing alignment metrics for ${base}..."
+    echo "Removing duplicates for ${base}..."
     picard MarkDuplicates \
         -I ${file} \
         -O ${nodup}${base}_nodup.bam \
         -M ${stats}${base}_metrics.txt \
         -VALIDATION_STRINGENCY SILENT \
         -REMOVE_DUPLICATES true
+done
+```
+Once duplicates were removed, bams were filtered to exclude unplaced scaffolds to expedite later steps.
+```
+dir=/media/jana/BigData/BIOL337/C_clupeaformis_SR/
+
+for bam in ${nodup}*_nodup.bam
+    do
+    base=$(basename ${bam} _nodup.bam)
+    echo "Subsetting file for ${base}..."
+    samtools view --threads 16 \
+        -L ${dir}chromosome_scaffolds.bed \
+        -b ${bam} > ${nodup}${base}_subset.bam
+
+    echo "Computing alignment metrics for ${base}..."
+    picard CollectAlignmentSummaryMetrics \
+        -R ${ref} \
+        -I ${nodup}${base}_subset.bam \
+        -O ${stats}${base}_alignment_metrics.txt
+
+    echo "Computing insert size metrics for ${base}..."
+    picard CollectInsertSizeMetrics \
+        -I ${nodup}${base}_nodup.bam \
+        -O ${stats}${base}_insert_size_metrics.txt \
+        -H ${stats}${base}_insert_size_histogram.pdf
+    
+    echo "Indexing ${base}..."
+    picard BuildBamIndex \
+        -I ${nodup}${base}_subset.bam \
+        -O ${nodup}${base}_subset.bam.bai
+done
+```
+Upon completion of the subsetting of bams with samtools, files were indexed (as above) and a dictionary reference was constructed using picard. Scripts were modified from [Merot et al](https://github.com/clairemerot/wgs_sample_preparation/tree/master/01_scripts).  
+```
+picard CreateSequenceDictionary -R ${ref} -O ${ref}.dict
+samtools faidx ${ref}
+```
+Realignment around INDELs was then performed using GATK.  
+```
+for bam in ${nodup}*_subset.bam
+    do
+    base=$(basename ${bam} _subset.bam)
+    echo "Realigning INDELs for ${base}..."
+    GenomeAnalysisTK -T RealignerTargetCreator \
+        -R ${ref} \
+        -I ${bam} \
+        -o ${bam}.intervals
+    GenomeAnalysisTK -T IndelRealigner \
+        -R ${ref} \
+        -I ${bam} \
+        -targetIntervals ${bam}.intervals \
+        --consensusDeterminationModel USE_READS \
+        -o ${dir}alignments/realigned/${base}_realigned.bam
+done
+```
+Finally, the [09_clip_overlap.sh](https://github.com/clairemerot/wgs_sample_preparation/blob/master/01_scripts/09_clip_overlap.sh) script provided by Merot et al. was modified to soft clip overlapping read ends using clipOverlap in BamUtil.  
+```
+for bam in ${dir}realigned/*_realigned.bam
+    do
+    base=$(basename ${bam} _realigned.bam)
+    echo "Clipping overlapping reads for ${base}..."
+    bam clipOverlap \
+        --in ${bam} \
+        --out ${dir}realigned/${base}.temp.bam \
+        --unmapped --storeOrig OC --stats
+    samtools view --threads 16 -hb -F 4 \
+        ${dir}realigned/${base}.temp.bam > ${dir}realigned/${base}_noOverlap.bam
+    samtools index ${dir}realigned/${base}_noOverlap.bam
+    rm ${dir}realigned/${base}.temp.bam
 done
 ```
