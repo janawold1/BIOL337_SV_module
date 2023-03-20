@@ -59,7 +59,7 @@ for pop in CD CN ID IN
 done
 ```
 ## Smoove
-While Delly was run for grouped populations, Smoove v0.2.8 was run by batching chromosomes (i.e., chr 1-10, 11-20, 21-30, & 31-40).  
+While Delly was run for grouped populations, Smoove v0.2.8 was run by batching chromosomes (i.e., chr 1-10, 11-20, 21-30, & 31-40). Multi-threading with the `-p` flag caused Smoove to crash, therefore this option was not used.  
 ```
 mkdir ${dir}smoove/calls
 
@@ -70,7 +70,7 @@ for chr in chr1-10 chr11-20 chr21-30 chr31-40
     smoove call -x --name all_${chr} \
         --outdir ${dir}smoove/calls/${chr} \
         --exclude ${dir}retain_${chr}.bed \
-        --fasta $ref -p 8 --duphold --genotype \
+        --fasta $ref --duphold --genotype \
         ${dir}alignments/realigned/*_realigned.bam
 done
 
