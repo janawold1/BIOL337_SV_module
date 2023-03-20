@@ -8,7 +8,7 @@ SVs were called by grouping populations. It is important to note that ID9 belong
 ```
 dir=/media/jana/BigData/BIOL337/C_clupeaformis_SR/
 
-for pop in CD CN ID IN
+for pop in "CD" "CN" "ID" "IN"
     do
     echo "Calling SVs for population ${pop}..."
     if [ "$pop" = "CN" ]
