@@ -58,6 +58,32 @@ for pop in "CD" "CN" "ID" "IN"
     fi
 done
 ```
+
+Each of the populations were merged as per:
+```
+delly merge -o ${dir}delly_merged.bcf ${dir}calls/*.bcf
+```
+And filtering to only include deletions, duplications and inversions.  
+```
+bcftools filter \
+    -i 'INFO/SVTYPE!="BND" & INFO/SVTYPE!="INS"' \
+    -O b -o ${dir}delly/delly_noTRA.bcf \
+    ${dir}delly/delly_merged.bcf
+```
+This left 19,477 SVs.
+
+This custom [Rscript](https://github.com/clairemerot/SR_SV/blob/main/01_scripts/Rscripts/add_explicit_seq.r) was used to convert sequence IDs. The code sourced below can be found [here](https://github.com/clairemerot/SR_SV/blob/main/01_scripts/Rscripts/fix_sniffles.R).  
+```
+argv <- commandArgs(T)
+INPUT<- argv[1]
+OUTPUT<- argv[2]
+GENOME<- argv[3]
+
+source("01_scripts/Rscripts/fix_sniffles.R")
+
+fix_sniffles(input_vcf=INPUT, output_vcf=OUTPUT, refgenome = GENOME)
+```
+
 ## Smoove
 While Delly was run for grouped populations, Smoove v0.2.8 was run by batching chromosomes (i.e., chr 1-10, 11-20, 21-30, & 31-40). Multi-threading with the `-p` flag caused Smoove to crash, therefore this option was not used.  
 ```
