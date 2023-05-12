@@ -1,2 +1,2 @@
 # BIOL337_SV_preparation
-Preparation of the Merot et al. data for use in BIOL337.  
+Calling SVs in for *Coregonus* sp. Code adapted from [Merot et al. 2022](https://onlinelibrary.wiley.com/doi/full/10.1111/mec.16468) for use in BIOL337.  
