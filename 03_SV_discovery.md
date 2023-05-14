@@ -334,3 +334,25 @@ bcftools view -T ^${dir}manta/blacklist.bed.gz ${dir}manta/manta_withSEQ.vcf > $
 echo "SVs after filtration for N seq" 
 grep -v ^\#\# ${dir}manta/manta_withSEQ_Nfiltered.vcf | wc -l 
 ```
+## Summaries
+Finally, we're ready to create a quick summary file for visualising the characteristics of our SVs in R. For this, we're going to be using BCFtools. Remember that the unfiltered SVs for Delly don't have length profiles, so there's a few extra steps.  
+```
+mkdir ~/SV_summaries
+
+# Summary for Delly. 
+printf "CHROM\tPOS\tSVLEN\tSVTYPE\tData_set\n" > ${dir}delly_summary.tsv
+bcftools query -f '%CHROM\t%POS\t%INFO/END\t%SVTYPE\tDelly_unfiltered\n' ${dir}delly/delly_merged.bcf | awk '{print $1"\t"$2"\t"$3-$2"\t"$4"\t"$5}' >> ${dir}delly_summary.tsv
+bcftools query -f '%CHROM\t%POS\t%SVLEN\t%SVTYPE\tDelly_filtered\n' ${dir}delly/delly_Nfiltered.vcf >> ${dir}delly_summary.tsv
+```
+Now we can move onto the summary for Smoove and Manta respectively. 
+```
+printf "CHROM\tPOS\tSVLEN\tSVTYPE\tData_set\n" > ${dir}smoove_summary.tsv
+bcftools query -f '%CHROM\t%POS\t%SVLEN\t%SVTYPE\tSmoove_unfiltered\n' ${dir}smoove/smoove_merged.vcf >> ${dir}smoove_summary.tsv
+bcftools query -f '%CHROM\t%POS\t%SVLEN\t%SVTYPE\tSmoove_filtered\n' ${dir}smoove/smoove_withSEQ_Nfiltered.vcf >> ${dir}smoove_summary.tsv
+sed -i 's/-//g' ${dir}smoove_summary.tsv
+
+printf "CHROM\tPOS\tSVLEN\tSVTYPE\tData_set\n" > ${dir}manta_summary.tsv
+bcftools query -f '%CHROM\t%POS\t%SVLEN\t%SVTYPE\tManta_unfiltered\n' ${dir}manta/manta_raw_chr1.vcf >> ${dir}manta_summary.tsv
+bcftools query -f '%CHROM\t%POS\t%SVLEN\t%SVTYPE\tManta_filtered\n' ${dir}manta/manta_withSEQ_Nfiltered.vcf >> ${dir}manta_summary.tsv
+sed -i 's/-//g' ${dir}manta_summary.tsv
+```

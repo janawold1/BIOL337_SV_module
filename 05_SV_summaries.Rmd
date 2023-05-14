@@ -1,0 +1,114 @@
+---
+title: 'Short-read SV discovery in *Coregonus clupeaformis*'
+author: "Jana R. Wold"
+date: "May 2023"
+output:
+  html_document:
+    self_contained: false
+---
+
+Congradulations! You've used short-read data to call structural variants (SVs) aligned to a linear reference genome. We had an initial look at how well our three data sets agree (or not) with one another. Now we're ready to learn a little about the unique characteristics of the SVs themselves.  
+
+Below we assess variation in the number of SVs discovered by type and size for Delly, Manta and Smoove. We also take a peek at how our filtering thresholds impacted our SV diversity. To start, lets load our relevant packages and set up our environment.
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+
+install.packages("devtools")
+devtools::install_github("G-Thomson/Manu")
+library(Manu)
+
+pal <- get_pal("Korimako")
+get_pal("Korimako")
+print_pal(pal)
+
+knitr::opts_chunk$set(dev = c("svg", "png"),
+                      dpi = 300,
+                      echo = FALSE,
+                      cache = TRUE)
+
+setwd("~/SV_summaries")
+```
+
+Data loaded as per:
+```{r Load Data, include=FALSE}
+# Data from each discovery/genotyping tool
+delly <-read.table("delly_summary.tsv", sep = "\t", header = TRUE)
+manta <-read.table("manta_summary.tsv", sep = "\t", header = TRUE)
+smoove <-read.table("smoove_summary.tsv", sep = "\t", header = TRUE)
+svs <- rbind(delly, manta, smoove)
+
+# Sorting into filtered and unfiltered data sets
+unfiltered <- svs %>%
+                filter(across(data, ~grepl('unfiltered' , .)))
+filtered <- svs %>%
+                filter(across(data, ~grepl('SVfiltered' , .)))
+
+
+# Data for testing differences in SV size and type among SV discovery tools
+filtered_del <- filtered [ filtered$SV_type == "DEL" ,]
+filtered_dup <- filtered [ filtered$SV_type == "DUP" ,]
+filtered_ins <- filtered [ filtered$SV_type == "INS" ,]
+filtered_inv <- filtered [ filtered$SV_type == "INV" ,]
+counts <- filtered %>%
+            group_by(data) %>%
+            count(vars = SV_type)
+counts <- spread(counts, vars, n)
+```
+Now that we have our data loaded, let's explore the number of structural variants per data set before and after filtering. 
+
+```{r type counts, echo=FALSE, fig.align='center'}
+ggplot(unfiltered, aes(x=SV_type, fill=data)) +
+  geom_histogram(stat = "count", position = position_dodge()) +
+  labs(x = "Structural Variant Type", y = "Count", title = "Count of all Structural Variants") +
+  scale_fill_manual(values = c("Delly_unfiltered" = "#091A26", "Manta_unfiltered" = "#2F638F", "smoove_unfiltered" = "#798C8B")) +
+  theme_light()
+
+ggplot(filtered, aes(x=SV_type, fill=data)) +
+  geom_histogram(stat = "count", position = position_dodge()) +
+  labs(x = "Structural Variant Type", y = "Count", title = "Count of Filtered Structural Variants") +
+  scale_fill_manual(values = c("Delly_filtered" = "#091A26", "Manta_filtered" = "#2F638F", "smoove_SVfiltered" = "#798C8B")) +
+  theme_light()
+```
+Here, we compared the size distribution of SVs called by all three tools. Here we use the natural log of SV size was to graph the size distribution and estimate a mean (geometric mean).
+
+```{r size_distribution, echo=FALSE, fig.align = 'center'}
+filtered$logsize <- log(filtered$size)
+head(filtered)
+
+# Not transformed
+ggplot(filtered, aes(x=size, fill=data)) +
+  geom_density(alpha = 0.7) +
+  xlim(0,10000) +
+  labs(x = "Structural Variant Size", y = "Proportion", title = "Size Distribution of Filtered Structural Variants") +
+  theme_light() +
+  facet_wrap(~SV_type, scales = "free_y") +
+  scale_fill_manual(values = c("delly_SVfiltered" = "#7D9D33", "manta_batch_SVfiltered" = "#CD8862", "manta_joint_SVfiltered" = "#BCA888", "smoove_SVfiltered" = "#DCC949"))
+
+ggplot(filtered, aes(x=size, fill=data)) +
+  geom_histogram(alpha = 0.7, position = "dodge") +
+  xlim(0,10000) +
+  labs(x = "Structural Variant Size", y = "Proportion", title = "Size Distribution of Filtered Structural Variants") +
+  theme_light() +
+  facet_wrap(~SV_type, scales = "free_y") +
+  scale_fill_manual(values = c("delly_SVfiltered" = "#7D9D33", "manta_batch_SVfiltered" = "#CD8862", "manta_joint_SVfiltered" = "#BCA888", "smoove_SVfiltered" = "#DCC949"))
+
+# Size transformed
+#png("plots/Size_distributions.png")
+ggplot(filtered, aes(x=logsize, fill=data)) +
+  geom_density(alpha = 0.5) +
+  labs(x = "Structural Variant Size", y = "Proportion", title = "Size Distribution of Filtered Structural Variants") +
+  theme_light() +
+  facet_wrap(~SV_type, scales = "free_y") +
+  scale_fill_manual(labels = c("delly_SVfiltered" = "Delly", "manta_batch_SVfiltered" = "Manta - Batch", "manta_joint_SVfiltered" = "Manta - Joint", "smoove_SVfiltered" = "Smoove"), values = c("#7D9D33", "#CD8862", "#BCA888","#DCC949"))
+#dev.off()
+
+ggplot(filtered, aes(x=logsize, fill=data)) +
+  geom_histogram(alpha = 0.7, position = "dodge") +
+  labs(x = "Structural Variant Size", y = "Proportion", title = "Size Distribution of Filtered Structural Variants") +
+  theme_light() +
+  facet_wrap(~SV_type, scales = "free_y") +
+  scale_fill_manual(labels = c("delly_SVfiltered" = "Delly", "manta_batch_SVfiltered" = "Manta - Batch", "manta_joint_SVfiltered" = "Manta - Joint", "smoove_SVfiltered" = "Smoove"), values = c("#7D9D33", "#CD8862", "#BCA888","#DCC949"))
+
+```
