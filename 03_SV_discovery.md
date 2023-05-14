@@ -11,7 +11,8 @@ SVs were called by grouping populations. It is important to note that ID9 belong
 ### Merot et al. 2023 called SVs in population batches. As we go throught this process, think about what are some of the benefits and caveats of this approach.  
 
 ```
-dir=/BIOL337/C_clupeaformis_SR/
+dir=/home/jwold/
+ref=/home/jwold/GCF_018398675.1_ASM1839867v1_genomic.fna
 
 for pop in "CD" "CN" "ID" "IN"
     do
@@ -63,7 +64,7 @@ for pop in "CD" "CN" "ID" "IN"
     fi
 done
 ```
-We now have four population-level calls, but we don't know how SVs called within each population may relate to other populations. To ensure we have a call set that is comparable across each of our populations, we must merge them. 
+We now have four population-level calls, but we don't know how SVs called within each population may relate to other populations. To ensure we have a call set that is comparable across each of our populations, we must merge them.  
 ```
 delly merge -o ${dir}delly_merged.bcf ${dir}calls/*.bcf
 ```
@@ -82,14 +83,7 @@ bcftools filter \
 
 This custom [Rscript](https://github.com/clairemerot/SR_SV/blob/main/01_scripts/Rscripts/add_explicit_seq.r) was used to convert sequence IDs. The code sourced below can be found [here](https://github.com/clairemerot/SR_SV/blob/main/01_scripts/Rscripts/fix_sniffles.R).  
 ```
-argv <- commandArgs(T)
-INPUT<- argv[1]
-OUTPUT<- argv[2]
-GENOME<- argv[3]
-
-source("01_scripts/Rscripts/fix_sniffles.R")
-
-fix_sniffles(input_vcf=INPUT, output_vcf=OUTPUT, refgenome = GENOME)
+script=/home/jwold/scripts/
 ```
 
 ## Smoove
