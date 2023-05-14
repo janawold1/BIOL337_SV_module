@@ -13,102 +13,127 @@ Below we assess variation in the number of SVs discovered by type and size for D
 
 ```{r setup, include=FALSE}
 library(ggplot2)
-library(tidyverse)
-
-install.packages("devtools")
-devtools::install_github("G-Thomson/Manu")
-library(Manu)
-
-pal <- get_pal("Korimako")
-get_pal("Korimako")
-print_pal(pal)
+library(magrittr)
+library(dplyr)
 
 knitr::opts_chunk$set(dev = c("svg", "png"),
                       dpi = 300,
                       echo = FALSE,
                       cache = TRUE)
 
-setwd("~/SV_summaries")
 ```
 
 Data loaded as per:
 ```{r Load Data, include=FALSE}
 # Data from each discovery/genotyping tool
-delly <-read.table("delly_summary.tsv", sep = "\t", header = TRUE)
-manta <-read.table("manta_summary.tsv", sep = "\t", header = TRUE)
-smoove <-read.table("smoove_summary.tsv", sep = "\t", header = TRUE)
+delly <-read.table("SV_summaries/delly_summary.tsv", sep = "\t", header = TRUE)
+manta <-read.table("SV_summaries/manta_summary.tsv", sep = "\t", header = TRUE)
+smoove <-read.table("SV_summaries/smoove_summary.tsv", sep = "\t", header = TRUE)
 svs <- rbind(delly, manta, smoove)
 
 # Sorting into filtered and unfiltered data sets
 unfiltered <- svs %>%
-                filter(across(data, ~grepl('unfiltered' , .)))
+                filter(if_any(Data_set, ~grepl('unfiltered' , .)))
 filtered <- svs %>%
-                filter(across(data, ~grepl('SVfiltered' , .)))
+                filter(if_any(Data_set, ~grepl('_filtered' , .)))
 
 
 # Data for testing differences in SV size and type among SV discovery tools
-filtered_del <- filtered [ filtered$SV_type == "DEL" ,]
-filtered_dup <- filtered [ filtered$SV_type == "DUP" ,]
-filtered_ins <- filtered [ filtered$SV_type == "INS" ,]
-filtered_inv <- filtered [ filtered$SV_type == "INV" ,]
+filtered_del <- filtered [ filtered$SVTYPE == "DEL" ,]
+filtered_dup <- filtered [ filtered$SVTYPE == "DUP" ,]
+filtered_ins <- filtered [ filtered$SVTYPE == "INS" ,]
+filtered_inv <- filtered [ filtered$SVTYPE == "INV" ,]
 counts <- filtered %>%
-            group_by(data) %>%
-            count(vars = SV_type)
+            group_by(Data_set) %>%
+            count(vars = SVTYPE)
+
 counts <- spread(counts, vars, n)
 ```
 Now that we have our data loaded, let's explore the number of structural variants per data set before and after filtering. 
 
 ```{r type counts, echo=FALSE, fig.align='center'}
-ggplot(unfiltered, aes(x=SV_type, fill=data)) +
+png("SV_summaries/unfiltered_SV_counts.png")
+ggplot(unfiltered, aes(x=SVTYPE, fill=Data_set)) +
   geom_histogram(stat = "count", position = position_dodge()) +
   labs(x = "Structural Variant Type", y = "Count", title = "Count of all Structural Variants") +
-  scale_fill_manual(values = c("Delly_unfiltered" = "#091A26", "Manta_unfiltered" = "#2F638F", "smoove_unfiltered" = "#798C8B")) +
+  scale_fill_manual(values = c("Delly_unfiltered" = "#091A26", "Manta_unfiltered" = "#2F638F", "Smoove_unfiltered" = "#798C8B")) +
   theme_light()
+  dev.off()
 
-ggplot(filtered, aes(x=SV_type, fill=data)) +
+png("SV_summaries/filtered_SV_counts.png")
+ggplot(filtered, aes(x=SVTYPE, fill=Data_set)) +
   geom_histogram(stat = "count", position = position_dodge()) +
   labs(x = "Structural Variant Type", y = "Count", title = "Count of Filtered Structural Variants") +
-  scale_fill_manual(values = c("Delly_filtered" = "#091A26", "Manta_filtered" = "#2F638F", "smoove_SVfiltered" = "#798C8B")) +
+  scale_fill_manual(values = c("Delly_filtered" = "#091A26", "Manta_filtered" = "#2F638F", "Smoove_filtered" = "#798C8B")) +
   theme_light()
+dev.off()
 ```
 Here, we compared the size distribution of SVs called by all three tools. Here we use the natural log of SV size was to graph the size distribution and estimate a mean (geometric mean).
 
 ```{r size_distribution, echo=FALSE, fig.align = 'center'}
-filtered$logsize <- log(filtered$size)
+filtered$logsize <- log(filtered$SVLEN)
 head(filtered)
 
 # Not transformed
-ggplot(filtered, aes(x=size, fill=data)) +
+png("SV_summaries/Size_distributions_density.png")
+ggplot(filtered, aes(x=SVLEN, fill=Data_set)) +
   geom_density(alpha = 0.7) +
   xlim(0,10000) +
   labs(x = "Structural Variant Size", y = "Proportion", title = "Size Distribution of Filtered Structural Variants") +
   theme_light() +
-  facet_wrap(~SV_type, scales = "free_y") +
-  scale_fill_manual(values = c("delly_SVfiltered" = "#7D9D33", "manta_batch_SVfiltered" = "#CD8862", "manta_joint_SVfiltered" = "#BCA888", "smoove_SVfiltered" = "#DCC949"))
+  facet_wrap(~SVTYPE, scales = "free_y") +
+  scale_fill_manual(values = c("Delly_filtered" = "#091A26", "Manta_filtered" = "#2F638F", "Smoove_filtered" = "#798C8B"))
+dev.off()
 
-ggplot(filtered, aes(x=size, fill=data)) +
+png("SV_summaries/Size_distributions_histogram.png")
+ggplot(filtered, aes(x=SVLEN, fill=Data_set)) +
   geom_histogram(alpha = 0.7, position = "dodge") +
   xlim(0,10000) +
   labs(x = "Structural Variant Size", y = "Proportion", title = "Size Distribution of Filtered Structural Variants") +
   theme_light() +
-  facet_wrap(~SV_type, scales = "free_y") +
-  scale_fill_manual(values = c("delly_SVfiltered" = "#7D9D33", "manta_batch_SVfiltered" = "#CD8862", "manta_joint_SVfiltered" = "#BCA888", "smoove_SVfiltered" = "#DCC949"))
+  facet_wrap(~SVTYPE, scales = "free_y") +
+  scale_fill_manual(values = c("Delly_filtered" = "#091A26", "Manta_filtered" = "#2F638F", "Smoove_filtered" = "#798C8B"))
+dev.off()
 
 # Size transformed
-#png("plots/Size_distributions.png")
-ggplot(filtered, aes(x=logsize, fill=data)) +
-  geom_density(alpha = 0.5) +
+png("SV_summaries/Log_size_distribution.png")
+ggplot(filtered, aes(x=logsize, fill=Data_set)) +
+  geom_density(alpha = 0.7) +
   labs(x = "Structural Variant Size", y = "Proportion", title = "Size Distribution of Filtered Structural Variants") +
   theme_light() +
-  facet_wrap(~SV_type, scales = "free_y") +
-  scale_fill_manual(labels = c("delly_SVfiltered" = "Delly", "manta_batch_SVfiltered" = "Manta - Batch", "manta_joint_SVfiltered" = "Manta - Joint", "smoove_SVfiltered" = "Smoove"), values = c("#7D9D33", "#CD8862", "#BCA888","#DCC949"))
-#dev.off()
+  facet_wrap(~SVTYPE, scales = "free_y") +
+  scale_fill_manual(labels = c("Delly_filtered" = "Delly", "Manta_filtered" = "Manta", "Smoove_filtered" = "Smoove"), values = c("#091A26", "#2F638F","#798C8B"))
+dev.off()
+```
 
-ggplot(filtered, aes(x=logsize, fill=data)) +
-  geom_histogram(alpha = 0.7, position = "dodge") +
-  labs(x = "Structural Variant Size", y = "Proportion", title = "Size Distribution of Filtered Structural Variants") +
+So now we have a sense of the number and size of the SVs, let's see what proportion of chromosome 1 is impacted by SVs of each type.
+```{r proportion, echo=FALSE, fig.align='center'}
+filtered$chrom_size <- 121031747
+filtered$proportion <- filtered$SVLEN / filtered$chrom_size
+
+
+# The proportion of chromosome 1 impacted by each filtered data set
+png("SV_summaries/chr1_proportion.png")
+filtered %>%
+  ggplot(aes(x = CHROM, y = proportion, fill = SVTYPE)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(x = "Chromosome", y = "Proportion of impacted base pairs", title = "Proportion of chromosome impacted by structural variants") +
   theme_light() +
-  facet_wrap(~SV_type, scales = "free_y") +
-  scale_fill_manual(labels = c("delly_SVfiltered" = "Delly", "manta_batch_SVfiltered" = "Manta - Batch", "manta_joint_SVfiltered" = "Manta - Joint", "smoove_SVfiltered" = "Smoove"), values = c("#7D9D33", "#CD8862", "#BCA888","#DCC949"))
+  facet_wrap(~Data_set, scales = "free_y") +
+  scale_fill_manual(values = c("DEL" = "#091A26", "DUP" = "#2F638F", "INS" = "#798C8B", "INV" = "#4F651D"))
+dev.off()
+```
 
+And finally, let's try to glean the position of SVs fall along chromosome 1.
+```{r SV_location, echo=FALSE, fig.align='center'}
+png("SV_summaries/chr1_locations.png")
+filtered %>%
+  ggplot(aes(x = POS, fill = SVTYPE)) +
+     geom_histogram(stat = "count") +
+    labs(x = "Chromosome Position", y = "Number of SV", title = "Locations of SVs on chromosome 1") +
+    theme_light() +
+    facet_wrap(~Data_set, scales = "free_y") +
+    xlim(166000, 171000) +
+    scale_fill_manual(values = c("DEL" = "#091A26", "DUP" = "#2F638F", "INS" = "#798C8B", "INV" = "#4F651D"))
+dev.off()
 ```
