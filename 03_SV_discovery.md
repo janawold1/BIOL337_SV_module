@@ -60,7 +60,7 @@ for pop in "CD" "CN" "ID" "IN"
         delly call -t ALL -o ${dir}delly/calls/${pop}.bcf \
             -g ${ref} \
             -q 20 -s 15 \
-            ${dir}alignments/${pop}CD*_chr1.bam
+            ${dir}alignments/${pop}*_chr1.bam
     fi
 done
 ```
