@@ -94,7 +94,7 @@ With this step complete, we can now implement length thresholds for our SVs. Mer
 ```
 bcftools view -i 'SVLEN>=50 & SVLEN<=100000' -O v -o ${dir}delly/delly_size_filtered.vcf ${dir}delly/delly_annot.vcf 
 ```
-Finally, we want to identify any SVs that were called in poorly assembled regions of the genome, or those with poorly resolved sequences. To do so, we'll leverage [this](https://github.com/clairemerot/SR_SV/blob/main/01_scripts/Rscripts/fix_sniffles_delly.R) custom Rscript from Merot et al. to infer SV sequences using the VCF and reference genome. This script works best on R v4.3 and requires a few dependencies to be installed before running.  
+Finally, we want to identify any SVs that were called in poorly assembled regions of the genome, or those with poorly resolved sequences. To do so, we'll leverage [this](https://github.com/clairemerot/SR_SV/blob/main/01_scripts/Rscripts/fix_sniffles_delly.R) custom Rscript from Merot et al. (and available in the `/BIOL337/module_6/` directory) to infer SV sequences using the VCF and reference genome. This script works best on R v4.3 and requires a few dependencies to be installed before running.  
 
 First start your R terminal, and install the required packages.  
 
